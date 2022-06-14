@@ -3,12 +3,16 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Put,
-  Query,
-} from '@nestjs/common';
+  Query, UnauthorizedException
+} from "@nestjs/common";
 import { HomeService } from './home.service';
-import { CreateHomeDto, HomeResponseDto } from './dtos/home.dto';
+import { CreateHomeDto, HomeResponseDto, UpdateHomeDto } from './dtos/home.dto';
+import { PropertyType } from '@prisma/client';
+import { User } from '../user/decorators/user.decorator';
 
 @Controller('home')
 export class HomeController {
@@ -19,7 +23,7 @@ export class HomeController {
     @Query('city') city?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
-    @Query('propertyType') propertyType?: string,
+    @Query('propertyType') propertyType?: PropertyType,
   ): Promise<HomeResponseDto[]> {
     const price =
       minPrice || maxPrice
@@ -34,7 +38,6 @@ export class HomeController {
       ...(price && { price }),
       ...(propertyType && { propertyType }),
     };
-    // @ts-ignore
     return this.homeService.getHomes(filters);
   }
 
@@ -44,15 +47,24 @@ export class HomeController {
   }
 
   @Post()
-  createHome(@Body() body: CreateHomeDto) {
-    return {};
+  createHome(@Body() body: CreateHomeDto, @User() user) {
+    return user;
+    // return this.homeService.createHome(body);
   }
 
   @Put(':id')
-  updateHome() {
-    return {};
+  updateHome(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateHomeDto,
+    @User() user,
+  ) {
+
+    // @ts-ignore
+    return this.homeService.updateHomeById(id, body);
   }
 
   @Delete(':id')
-  deleteHome() {}
+  deleteHome(@Param('id', ParseIntPipe) id: number, @User() user) {
+    return this.homeService.deleteHomeById(id);
+  }
 }
